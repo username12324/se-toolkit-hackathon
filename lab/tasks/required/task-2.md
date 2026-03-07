@@ -50,16 +50,17 @@ Title: `[Task] Analytics Endpoints`
 
    This file contains 17 tests organized into four test classes:
 
-   | Test class | Endpoint | What it tests |
-   |------------|----------|---------------|
-   | `TestScores` | `GET /analytics/scores?lab=lab-04` | Score histogram with 4 buckets |
-   | `TestPassRates` | `GET /analytics/pass-rates?lab=lab-04` | Average score and attempt count per task |
-   | `TestTimeline` | `GET /analytics/timeline?lab=lab-04` | Submission count per day |
-   | `TestGroups` | `GET /analytics/groups?lab=lab-04` | Average score and student count per group |
+   | Test class      | Endpoint                               | What it tests                             |
+   | --------------- | -------------------------------------- | ----------------------------------------- |
+   | `TestScores`    | `GET /analytics/scores?lab=lab-04`     | Score histogram with 4 buckets            |
+   | `TestPassRates` | `GET /analytics/pass-rates?lab=lab-04` | Average score and attempt count per task  |
+   | `TestTimeline`  | `GET /analytics/timeline?lab=lab-04`   | Submission count per day                  |
+   | `TestGroups`    | `GET /analytics/groups?lab=lab-04`     | Average score and student count per group |
 
-> [!NOTE]
-> The tests create an in-memory database with fixture data and send requests to the endpoints.
-> You do not need to modify the tests — only the endpoint implementations.
+   > **Note:**
+   >
+   > The tests create an in-memory database with fixture data and send requests to the endpoints.
+   > You do not need to modify the tests — only the endpoint implementations.
 
 2. [Open the file](../../../wiki/vs-code.md#open-the-file):
    [`backend/app/routers/analytics.py`](../../../backend/app/routers/analytics.py).
