@@ -5,6 +5,7 @@
 - [What is an LLM](#what-is-an-llm)
 - [Model](#model)
   - [Choose a model](#choose-a-model)
+- [Inference](#inference)
   - [Local inference](#local-inference)
 - [LLM provider API](#llm-provider-api)
   - [LLM provider APIs](#llm-provider-apis)
@@ -39,6 +40,10 @@ Different models vary in capability, speed, and cost. [Coding agents](./coding-a
 ### Choose a model
 
 Choose a model for the task at hand.
+
+## Inference
+
+Inference is the process of generating output from a trained [model](#model) — for example, producing a text [response](#response) from a [prompt](#prompt).
 
 ### Local inference
 
