@@ -42,3 +42,6 @@ The course offers:
   - supports Windows, Linux, macOS on the student's computer
   - can work with any Linux-based VM with particular pre-installed software
   - uses GitHub but mostly none of its specific features that aren't available on other platforms
+- Working scaffolding for a typical full-stack web application.
+- Tasks with guardrails. Tasks are almost guaranteed to be doable.
+
