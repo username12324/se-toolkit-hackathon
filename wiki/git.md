@@ -129,7 +129,8 @@ Docs:
 
 ### `main` branch
 
-`main` is the default branch of a repository.
+`main` is typically the default branch of a [repository](./git.md#repository).
+
 It represents the stable, up-to-date state of the project.
 
 ### `<branch>` placeholder
