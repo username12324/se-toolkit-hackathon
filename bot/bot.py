@@ -26,15 +26,15 @@ def run_test_mode(command: str) -> None:
     
     handler = get_handler(cmd)
     if handler is None:
-        print(f"Unknown command: {cmd}")
-        sys.exit(1)
-    
+        print(f"Unknown command: {cmd}. Use /help to see available commands.")
+        sys.exit(0)
+
     # Call handler - some take arguments, some don't
     if cmd == "/scores":
         response = handler(arg)
     else:
         response = handler()
-    
+
     print(response)
     sys.exit(0)
 
