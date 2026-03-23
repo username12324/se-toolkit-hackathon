@@ -15,6 +15,7 @@ from .command_handlers import (
     handle_health,
     handle_labs,
     handle_scores,
+    handle_message,
     get_handler,
 )
 
@@ -24,5 +25,6 @@ __all__ = [
     "handle_health",
     "handle_labs",
     "handle_scores",
+    "handle_message",
     "get_handler",
 ]
