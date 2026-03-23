@@ -6,12 +6,11 @@ No Telegram dependencies here - this makes handlers testable.
 """
 
 from services.api_client import LMSClient
-from services.llm import query_llm
 
 
 def handle_start() -> str:
     """Handle /start command - returns welcome message."""
-    return "Welcome! I'm your LMS assistant bot. Use /help to see available commands or just ask me a question in plain language."
+    return "Welcome! I'm your LMS assistant bot. Use /help to see available commands."
 
 
 def handle_help() -> str:
@@ -21,13 +20,7 @@ def handle_help() -> str:
 /help - Show this help message
 /health - Check backend status
 /labs - List available labs
-/scores <lab> - Show pass rates for a lab (e.g., /scores lab-04)
-
-You can also ask questions in plain language like:
-- "What labs are available?"
-- "Show me scores for lab-04"
-- "Who are the top students in lab-01?"
-- "Sync the latest data" """
+/scores <lab> - Show pass rates for a lab (e.g., /scores lab-04)"""
 
 
 def handle_health() -> str:
@@ -78,15 +71,10 @@ def handle_scores(query: str = "") -> str:
         return str(e)
 
 
-def handle_message(text: str) -> str:
-    """Handle plain text message - routes through LLM."""
-    return query_llm(text)
-
-
 def get_handler(command: str):
     """
     Route command to appropriate handler.
-
+    
     Returns the handler function for a given command string,
     or None if the command is not recognized.
     """
