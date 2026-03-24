@@ -17,6 +17,7 @@ from .command_handlers import (
     handle_scores,
     get_handler,
 )
+from .keyboard import get_main_keyboard, get_lab_selection_keyboard, get_help_text
 
 __all__ = [
     "handle_start",
@@ -25,4 +26,7 @@ __all__ = [
     "handle_labs",
     "handle_scores",
     "get_handler",
+    "get_main_keyboard",
+    "get_lab_selection_keyboard",
+    "get_help_text",
 ]

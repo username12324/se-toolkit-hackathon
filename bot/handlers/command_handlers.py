@@ -6,21 +6,27 @@ No Telegram dependencies here - this makes handlers testable.
 """
 
 from services.api_client import LMSClient
+from .keyboard import get_help_text
 
 
 def handle_start() -> str:
     """Handle /start command - returns welcome message."""
-    return "Welcome! I'm your LMS assistant bot. Use /help to see available commands."
+    return """Welcome! I'm your LMS analytics assistant.
+
+I can help you understand lab performance and student progress using plain English questions.
+
+**Try asking me:**
+• "Which lab has the lowest pass rate?"
+• "Show me scores for lab 4"
+• "Who are the top 5 students in lab 3?"
+• "How are groups performing?"
+
+Use /help to see all my capabilities, or just start asking!"""
 
 
 def handle_help() -> str:
     """Handle /help command - lists available commands."""
-    return """Available commands:
-/start - Welcome message
-/help - Show this help message
-/health - Check backend status
-/labs - List available labs
-/scores <lab> - Show pass rates for a lab (e.g., /scores lab-04)"""
+    return get_help_text()
 
 
 def handle_health() -> str:

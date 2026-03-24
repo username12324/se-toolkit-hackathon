@@ -3,7 +3,7 @@
 Telegram bot entry point.
 
 Supports two modes:
-- Test mode: `uv run bot.py --test "/command"` prints response to stdout
+- Test mode: `uv run bot.py --test "message"` prints response to stdout
 - Telegram mode: `uv run bot.py` connects to Telegram and handles messages
 """
 
@@ -11,32 +11,43 @@ import argparse
 import sys
 
 from handlers import get_handler
+from services.llm_client import route
 
 
-def run_test_mode(command: str) -> None:
+def run_test_mode(message: str) -> None:
     """
-    Run a command through the handler and print result to stdout.
-    
-    This allows testing handlers without connecting to Telegram.
+    Run a message through the bot and print result to stdout.
+
+    Supports both slash commands and natural language queries.
+    - Slash commands (e.g., /start, /help) are handled by command handlers
+    - Natural language queries are routed through the LLM
     """
-    # Parse command and extract arguments
-    parts = command.strip().split(maxsplit=1)
-    cmd = parts[0]
-    arg = parts[1] if len(parts) > 1 else ""
-    
-    handler = get_handler(cmd)
-    if handler is None:
-        print(f"Unknown command: {cmd}. Use /help to see available commands.")
+    message = message.strip()
+
+    # Check if it's a slash command
+    if message.startswith("/"):
+        parts = message.split(maxsplit=1)
+        cmd = parts[0]
+        arg = parts[1] if len(parts) > 1 else ""
+
+        handler = get_handler(cmd)
+        if handler is None:
+            print(f"Unknown command: {cmd}. Use /help to see available commands.")
+            sys.exit(0)
+
+        # Call handler - some take arguments, some don't
+        if cmd == "/scores":
+            response = handler(arg)
+        else:
+            response = handler()
+
+        print(response)
         sys.exit(0)
-
-    # Call handler - some take arguments, some don't
-    if cmd == "/scores":
-        response = handler(arg)
     else:
-        response = handler()
-
-    print(response)
-    sys.exit(0)
+        # Natural language query - route through LLM
+        response = route(message)
+        print(response)
+        sys.exit(0)
 
 
 def main():

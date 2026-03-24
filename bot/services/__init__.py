@@ -6,5 +6,6 @@ They are separate from handlers — this is *separation of concerns*.
 """
 
 from .api_client import LMSClient
+from .llm_client import LLMClient, route
 
-__all__ = ["LMSClient"]
+__all__ = ["LMSClient", "LLMClient", "route"]
