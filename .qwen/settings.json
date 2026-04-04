@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir *)",
+      "Bash(docker compose down)",
+      "Bash(docker compose up *)",
+      "Bash(sleep *)",
+      "Bash(docker compose *)",
+      "Bash(curl *)",
+      "Bash(python3 *)",
+      "Bash(grep *)"
+    ]
+  },
+  "$version": 3
+}
