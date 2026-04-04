@@ -1,9 +1,3 @@
-
-<!--Stop-->
->**\[!COPYRIGHT CAUTION]**\
->This project is based on Lab 7 of se-toolkit-labs, all the rights for all the content besides *hydration-bot* belong to Nursultan and se-toolkit team
-# 💧 Hydration Reminder Bot
-
 # LMS Analytics & Telegram Bot
 
 A full-stack learning management analytics platform with a conversational Telegram bot, designed for university instructors to monitor student progress across software engineering labs.
