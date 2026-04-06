@@ -1,4 +1,12 @@
-"""Telegram command and callback handlers for the Hydration Bot.
+"""Telegram command and callback handlers for the Hydration + Broadcast Bot.
+
+Water reminder commands (original):
+    /start   – welcome + main menu
+    /settime – set reminder interval
+    /status  – show current settings
+
+Event broadcast commands (new, participant-facing):
+    /events  – show status of broadcasts the user is subscribed to
 
 All handler coroutines are registered by ``register_handlers(application)``.
 """
@@ -73,12 +81,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await db.ensure_user(user.id, user.username)
 
     welcome = (
-        f"👋 Hi {user.mention_html()}! I'm your Hydration Reminder Bot.\n\n"
-        "I'll remind you to drink water at regular intervals so you stay "
-        "healthy and hydrated throughout the day.\n\n"
-        "Use the buttons below or try these commands:\n"
-        "• /settime — set your reminder interval\n"
-        "• /status — check your current settings"
+        f"👋 Hi {user.mention_html()}! I'm your Hydration & Event Reminder Bot.\n\n"
+        "I can help you with two things:\n\n"
+        "💧 <b>Personal Hydration Reminders</b> — get reminded to drink water.\n"
+        "    Use the buttons below or try /settime and /status.\n\n"
+        "📢 <b>Event Broadcasts</b> — receive scheduled messages from event organisers.\n"
+        "    You'll be added by an organiser using your alias.\n"
+        "    Use /events to see your broadcast subscriptions.\n\n"
+        "Use the buttons below to manage your personal water reminders!"
     )
 
     await update.message.reply_text(
@@ -128,7 +138,7 @@ async def set_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # If reminders are running, reschedule with the new interval.
     if was_active:
-        start_reminder(update.get_bot(), user.id, minutes)  # type: ignore[arg-type]
+        start_reminder(context.application, user.id, minutes)  # type: ignore[arg-type]
 
     await update.message.reply_text(
         f"✅ Reminder interval set to <b>{minutes} minute(s)</b>.",
@@ -156,11 +166,56 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     last_str = last.strftime("%Y-%m-%d %H:%M UTC") if last else "Never"
 
     text = (
-        f"📊 <b>Your Settings</b>\n\n"
+        f"📊 <b>Your Hydration Settings</b>\n\n"
         f"Interval: <b>{row['interval_minutes']}</b> minute(s)\n"
         f"Status: {active}\n"
         f"Last reminder: {last_str}"
     )
+    await update.message.reply_text(text, parse_mode="HTML")
+
+
+# ---------------------------------------------------------------------------
+# /events  (new — participant-facing broadcast info)
+# ---------------------------------------------------------------------------
+async def events_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show the user which broadcasts they are subscribed to."""
+    user = update.effective_user
+    assert user is not None
+
+    chat_id = user.id
+
+    # Find aliases that match this chat_id
+    all_participants = await db.list_participants()
+    user_aliases = [p["alias"] for p in all_participants if p["telegram_chat_id"] == chat_id]
+
+    if not user_aliases:
+        await update.message.reply_text(
+            "📢 You are not currently subscribed to any event broadcasts.\n\n"
+            "An event organiser needs to register you with an alias first.\n"
+            "Meanwhile, you can still use /start for personal hydration reminders!"
+        )
+        return
+
+    # Find active broadcasts that target this user
+    broadcasts = await db.list_broadcasts()
+    subs = []
+    for bc in broadcasts:
+        if any(a in bc["targets"] for a in user_aliases):
+            status_word = "✅ Active" if bc["is_active"] else "⏸️ Paused"
+            subs.append(
+                f"• <b>Broadcast #{bc['id']}</b> — {status_word}\n"
+                f"  Every {bc['interval_minutes']} min, {bc['start_time']}–{bc['end_time']}"
+            )
+
+    if not subs:
+        await update.message.reply_text(
+            f"📢 Your alias(es): <b>{', '.join(user_aliases)}</b>\n\n"
+            "No active broadcasts target you right now.",
+            parse_mode="HTML",
+        )
+        return
+
+    text = "📢 <b>Your Event Broadcasts</b>\n\n" + "\n\n".join(subs)
     await update.message.reply_text(text, parse_mode="HTML")
 
 
@@ -270,7 +325,7 @@ async def unknown_message(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if update.message and update.message.text:
         await update.message.reply_text(
             "I only understand commands like <code>/start</code>, <code>/settime &lt;minutes&gt;</code>, "
-            "and <code>/status</code>. Try /start to see the menu!",
+            "<code>/status</code>, and <code>/events</code>. Try /start to see the menu!",
             parse_mode="HTML",
         )
 
@@ -283,6 +338,7 @@ def register_handlers(application: Application) -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("settime", set_time))
     application.add_handler(CommandHandler("status", status))
+    application.add_handler(CommandHandler("events", events_command))
     application.add_handler(CallbackQueryHandler(button_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, unknown_message))
     logger.info("All handlers registered.")

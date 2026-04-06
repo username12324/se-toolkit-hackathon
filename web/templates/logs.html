@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Delivery Logs – Broadcast System{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Delivery Logs</h1>
+</div>
+
+{% if logs %}
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Broadcast #</th>
+                <th>Participant</th>
+                <th>Message Preview</th>
+                <th>Sent At</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.id }}</td>
+                <td>{{ log.broadcast_id or "–" }}</td>
+                <td><code>{{ log.participant_alias }}</code></td>
+                <td class="message-cell">{{ log.message_preview or "–" }}</td>
+                <td>{{ log.sent_at[:19].replace("T", " ") if log.sent_at else "–" }}</td>
+                <td>
+                    <span class="status-badge {{ log.status }}">
+                        {{ "✅ Sent" if log.status == "sent" else "❌ Failed" }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No delivery logs yet.</p>
+    <p>Logs will appear here once broadcasts start sending messages.</p>
+</div>
+{% endif %}
+{% endblock %}

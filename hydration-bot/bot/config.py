@@ -54,6 +54,10 @@ class Settings:
     db_host: str = field(default_factory=lambda: os.getenv("DB_HOST", "localhost"))
     db_port: int = field(default_factory=lambda: int(os.getenv("DB_PORT", "5432")))
 
+    # Web dashboard
+    web_host: str = field(default_factory=lambda: os.getenv("WEB_HOST", "0.0.0.0"))
+    web_port: int = field(default_factory=lambda: int(os.getenv("WEB_PORT", "8000")))
+
     # Reminder defaults
     default_interval: int = field(
         default_factory=lambda: int(os.getenv("DEFAULT_INTERVAL", "60"))

@@ -45,7 +45,8 @@ services:
       - ${POSTGRES_HOST_ADDRESS:?'POSTGRES_HOST_ADDRESS is required'}:${POSTGRES_HOST_PORT:?'POSTGRES_HOST_PORT is required'}:${CONST_POSTGRESQL_DEFAULT_PORT:?'CONST_POSTGRESQL_DEFAULT_PORT is required'}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/app/data/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/app/data/init.sql:/docker-entrypoint-initdb.d/01_init.sql
+      - ./db/init_broadcast.sql:/docker-entrypoint-initdb.d/02_broadcast.sql
     healthcheck:
       test:
         [
@@ -67,6 +68,52 @@ services:
       - SCRIPT_NAME=/utils/pgadmin
     ports:
       - ${PGADMIN_HOST_ADDRESS:?'PGADMIN_HOST_ADDRESS is required'}:${PGADMIN_HOST_PORT:?'PGADMIN_HOST_PORT is required'}:80
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+      args:
+        REGISTRY_PREFIX: ${REGISTRY_PREFIX:-harbor.pg.innopolis.university/docker-hub-cache/}
+    restart: unless-stopped
+    networks:
+      - lms-network
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN:?'BOT_TOKEN is required'}
+      - DB_HOST=${CONST_POSTGRESQL_SERVICE_NAME:?'CONST_POSTGRESQL_SERVICE_NAME is required'}
+      - DB_PORT=${CONST_POSTGRESQL_DEFAULT_PORT:?'CONST_POSTGRESQL_DEFAULT_PORT is required'}
+      - DB_NAME=${POSTGRES_DB:?'POSTGRES_DB is required'}
+      - DB_USER=${POSTGRES_USER:?'POSTGRES_USER is required'}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?'POSTGRES_PASSWORD is required'}
+      - LMS_API_BASE_URL=${LMS_API_BASE_URL:-}
+      - LMS_API_KEY=${LMS_API_KEY:-}
+      - LLM_API_MODEL=${LLM_API_MODEL:-coder-model}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_API_BASE_URL=${LLM_API_BASE_URL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        REGISTRY_PREFIX: ${REGISTRY_PREFIX:-harbor.pg.innopolis.university/docker-hub-cache/}
+    restart: unless-stopped
+    networks:
+      - lms-network
+    ports:
+      - ${WEB_HOST_ADDRESS:-127.0.0.1}:${WEB_HOST_PORT:-8000}:8000
+    environment:
+      - DB_HOST=${CONST_POSTGRESQL_SERVICE_NAME:?'CONST_POSTGRESQL_SERVICE_NAME is required'}
+      - DB_PORT=${CONST_POSTGRESQL_DEFAULT_PORT:?'CONST_POSTGRESQL_DEFAULT_PORT is required'}
+      - DB_NAME=${POSTGRES_DB:?'POSTGRES_DB is required'}
+      - DB_USER=${POSTGRES_USER:?'POSTGRES_USER is required'}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?'POSTGRES_PASSWORD is required'}
     depends_on:
       postgres:
         condition: service_healthy

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard – Broadcast System{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Broadcast Schedules</h1>
+    <a href="/broadcasts/new" class="btn btn-primary">+ New Broadcast</a>
+</div>
+
+{% if broadcasts %}
+<div class="broadcast-list">
+    {% for bc in broadcasts %}
+    <div class="broadcast-card {% if not bc.is_active %}inactive{% endif %}">
+        <div class="broadcast-card-header">
+            <h3>Broadcast #{{ bc.id }}</h3>
+            <span class="status-badge {% if bc.is_active %}active{% else %}paused{% endif %}">
+                {% if bc.is_active %}● Active{% else %}○ Paused{% endif %}
+            </span>
+        </div>
+
+        <div class="broadcast-card-body">
+            <div class="message-preview">{{ bc.message[:150] }}{% if bc.message|length > 150 %}...{% endif %}</div>
+
+            <div class="broadcast-meta">
+                <div class="meta-item">
+                    <strong>Interval:</strong> every {{ bc.interval_minutes }} min
+                </div>
+                <div class="meta-item">
+                    <strong>Time window:</strong> {{ bc.start_time[:5] }} – {{ bc.end_time[:5] }}
+                </div>
+                <div class="meta-item">
+                    <strong>Targets:</strong>
+                    {% if bc.targets %}
+                        {{ bc.targets | join(", ") }}
+                    {% else %}
+                        None
+                    {% endif %}
+                </div>
+                {% if bc.last_sent_at %}
+                <div class="meta-item">
+                    <strong>Last sent:</strong> {{ bc.last_sent_at[:19].replace("T", " ") }}
+                </div>
+                {% else %}
+                <div class="meta-item">
+                    <strong>Last sent:</strong> Never
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="broadcast-card-actions">
+            <a href="/broadcasts/{{ bc.id }}/edit" class="btn btn-secondary">Edit</a>
+            <form action="/broadcasts/{{ bc.id }}/delete" method="POST" style="display:inline"
+                  onsubmit="return confirm('Delete this broadcast?');">
+                <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No broadcast schedules yet.</p>
+    <a href="/broadcasts/new" class="btn btn-primary">Create your first broadcast</a>
+</div>
+{% endif %}
+{% endblock %}

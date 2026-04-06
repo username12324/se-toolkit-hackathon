@@ -41,4 +41,10 @@ def load_config() -> dict[str, str]:
         "LLM_API_KEY": os.getenv("LLM_API_KEY", ""),
         "LLM_API_MODEL": os.getenv("LLM_API_MODEL", "coder-model"),
         "LLM_API_BASE_URL": os.getenv("LLM_API_BASE_URL", ""),
+        # Database (for broadcast system)
+        "DB_HOST": os.getenv("DB_HOST", "localhost"),
+        "DB_PORT": os.getenv("DB_PORT", "5432"),
+        "DB_NAME": os.getenv("DB_NAME", "lms"),
+        "DB_USER": os.getenv("DB_USER", "postgres"),
+        "DB_PASSWORD": os.getenv("DB_PASSWORD", "postgres"),
     }

@@ -19,7 +19,7 @@ from telegram.ext import ApplicationBuilder
 from . import database as db
 from .config import settings
 from .handlers import register_handlers
-from .scheduler import restore_active_reminders
+from .scheduler import restore_active_reminders, start_broadcast_checker, restore_broadcast_info
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +40,16 @@ def _setup_logging() -> None:
 # creates, so asyncpg connections are never orphaned across loops.
 # ---------------------------------------------------------------------------
 async def post_init(application) -> None:
-    """Initialise the DB, verify schema, and restore active reminders."""
+    """Initialise the DB, verify schema, restore reminders, and start broadcast checker."""
     await db.init_pool()
     await db.ensure_schema()
     restored = await restore_active_reminders(application)
-    logger.info("Restored %d reminder(s).", restored)
+    logger.info("Restored %d water reminder(s).", restored)
+
+    # Start broadcast scheduler
+    start_broadcast_checker(application)
+    bc_count = await restore_broadcast_info(application)
+    logger.info("Broadcast system ready (%d active broadcast(s)).", bc_count)
 
 
 async def post_shutdown(application) -> None:

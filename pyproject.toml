@@ -1,5 +1,5 @@
 [tool.uv.workspace]
-members = ["backend", "bot"]
+members = ["backend", "bot", "web"]
 
 [dependency-groups]
 dev = [
@@ -99,8 +99,14 @@ help = "Run bot in Test mode"
 cmd = "python bot/bot.py --test"
 envfile = ".env.bot.secret"
 
+# Web dashboard
+
+[tool.poe.tasks.web]
+help = "Run the broadcast dashboard web app"
+cmd = "uvicorn web.app:app --host 0.0.0.0 --port 8000 --reload"
+
 [tool.pyright]
-include = ["backend", "bot"]
+include = ["backend", "bot", "web"]
 exclude = ["**/__pycache__", "**/node_modules", "**/.*", ".venv", ".direnv"]
 typeCheckingMode = "strict"
 reportAssignmentType = "none"

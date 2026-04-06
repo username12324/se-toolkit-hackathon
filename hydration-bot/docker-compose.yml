@@ -1,7 +1,7 @@
-# Docker Compose for the Hydration Reminder Bot
+# Docker Compose for the Hydration + Event Broadcast System
 #
 # Usage:
-#   docker compose up --build       # start both bot and database
+#   docker compose up --build       # start bot, web, and database
 #   docker compose down             # stop (keeps data)
 #   docker compose down -v          # stop AND delete persistent data
 
@@ -29,7 +29,7 @@ services:
     networks:
       - hydration-net
 
-  # ── Bot ──────────────────────────────────────────────────────
+  # ── Telegram Bot (water reminders + broadcast scheduler) ─────
   bot:
     build:
       context: .
@@ -52,6 +52,23 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+    networks:
+      - hydration-net
+
+  # ── Web Dashboard (organizer broadcast management) ───────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: hydration-web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    environment:
+      DB_DSN: postgresql://${DB_USER:-hydration_user}:${DB_PASSWORD:-changeme}@db:5432/${DB_NAME:-hydration_bot}
     networks:
       - hydration-net
 

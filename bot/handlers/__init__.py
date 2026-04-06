@@ -18,6 +18,7 @@ from .command_handlers import (
     get_handler,
 )
 from .keyboard import get_main_keyboard, get_lab_selection_keyboard, get_help_text
+from .water_handlers import register_water_handlers
 
 __all__ = [
     "handle_start",
@@ -29,4 +30,5 @@ __all__ = [
     "get_main_keyboard",
     "get_lab_selection_keyboard",
     "get_help_text",
+    "register_water_handlers",
 ]

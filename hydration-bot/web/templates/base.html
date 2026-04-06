@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Broadcast Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="nav-brand">📢 Broadcast Dashboard</a>
+            <ul class="nav-links">
+                <li><a href="/" class="{{ 'active' if request.url.path == '/' else '' }}">Dashboard</a></li>
+                <li><a href="/participants" class="{{ 'active' if request.url.path == '/participants' else '' }}">Participants</a></li>
+                <li><a href="/logs" class="{{ 'active' if request.url.path == '/logs' else '' }}">Logs</a></li>
+            </ul>
+            <div class="nav-user">
+                <span class="nav-username">👤 {{ current_user }}</span>
+                <form method="POST" action="/logout" class="logout-form">
+                    <button type="submit" class="btn btn-sm btn-secondary">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>Event Broadcast Reminder System</p>
+        </div>
+    </footer>
+</body>
+</html>

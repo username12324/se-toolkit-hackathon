@@ -3,8 +3,8 @@ FROM python:3.11-slim-bookworm AS builder
 
 WORKDIR /build
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+COPY requirements-web.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements-web.txt
 
 # ---------- runtime stage ----------
 FROM python:3.11-slim-bookworm
@@ -18,15 +18,14 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 
 # Application code.
-COPY bot/ ./bot/
-COPY requirements.txt .
+COPY web/ ./web/
+COPY db/ ./db/
 
 # Run as non-root for security.
 RUN groupadd -r appuser && useradd -r -g appuser appuser \
     && chown -R appuser:appuser /app
 USER appuser
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import telegram; print('ok')" || exit 1
+EXPOSE 8000
 
-CMD ["python", "-m", "bot.main"]
+CMD ["uvicorn", "web.app:app", "--host", "0.0.0.0", "--port", "8000"]

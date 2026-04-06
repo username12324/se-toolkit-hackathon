@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Participants – Broadcast System{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Participants</h1>
+</div>
+
+<!-- Add participant form -->
+<div class="card">
+    <h2>Add Participant</h2>
+    <form method="POST" action="/participants" class="inline-form">
+        <div class="form-group">
+            <label for="alias">Alias</label>
+            <input type="text" id="alias" name="alias" required placeholder="e.g., john_doe">
+        </div>
+        <div class="form-group">
+            <label for="telegram_chat_id">Telegram Chat ID</label>
+            <input type="number" id="telegram_chat_id" name="telegram_chat_id" required placeholder="e.g., 123456789">
+        </div>
+        <button type="submit" class="btn btn-primary">Add</button>
+    </form>
+    <small>Tip: Users can find their chat ID by messaging <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a> on Telegram.</small>
+</div>
+
+<!-- Participant list -->
+{% if participants %}
+<div class="card">
+    <h2>Registered Participants ({{ participants|length }})</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Alias</th>
+                <th>Telegram Chat ID</th>
+                <th>Registered</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in participants %}
+            <tr>
+                <td><code>{{ p.alias }}</code></td>
+                <td><code>{{ p.telegram_chat_id }}</code></td>
+                <td>{{ p.created_at[:10] if p.created_at else "–" }}</td>
+                <td>
+                    <form action="/participants/{{ p.alias }}/delete" method="POST" style="display:inline"
+                          onsubmit="return confirm('Remove participant {{ p.alias }}?');">
+                        <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No participants registered yet.</p>
+    <p>Add participants above, then they'll be available as broadcast targets.</p>
+</div>
+{% endif %}
+{% endblock %}
