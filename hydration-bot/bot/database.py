@@ -416,6 +416,87 @@ async def update_broadcast_last_sent(broadcast_id: int) -> None:
         )
 
 
+# --- Broadcast subscriptions ---
+
+async def get_broadcasts_for_user(telegram_chat_id: int) -> list[dict[str, Any]]:
+    """Get all broadcasts that a user can see (via broadcast_targets) with subscription status."""
+    async with acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT b.id, b.message, b.interval_minutes, b.start_time, b.end_time,
+                   b.is_active, b.last_sent_at, b.created_at,
+                   COALESCE(s.is_subscribed, FALSE) AS is_subscribed
+            FROM broadcasts b
+            LEFT JOIN broadcast_targets t ON b.id = t.broadcast_id
+            LEFT JOIN broadcast_subscriptions s ON s.broadcast_id = b.id AND s.telegram_chat_id = $1
+            WHERE t.participant_alias IN (
+                SELECT alias FROM participants WHERE telegram_chat_id = $1
+            )
+            GROUP BY b.id, s.is_subscribed
+            ORDER BY b.id
+            """,
+            telegram_chat_id,
+        )
+    results = []
+    for r in rows:
+        results.append({
+            "id": r["id"],
+            "message": r["message"],
+            "interval_minutes": r["interval_minutes"],
+            "start_time": str(r["start_time"]),
+            "end_time": str(r["end_time"]),
+            "is_active": r["is_active"],
+            "is_subscribed": r["is_subscribed"],
+            "last_sent_at": r["last_sent_at"].isoformat() if r["last_sent_at"] else None,
+            "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+        })
+    return results
+
+
+async def subscribe_to_broadcast(telegram_chat_id: int, broadcast_id: int) -> None:
+    """Subscribe a user to a broadcast (upsert)."""
+    async with acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO broadcast_subscriptions (telegram_chat_id, broadcast_id, is_subscribed)
+            VALUES ($1, $2, TRUE)
+            ON CONFLICT (telegram_chat_id, broadcast_id)
+            DO UPDATE SET is_subscribed = TRUE;
+            """,
+            telegram_chat_id, broadcast_id,
+        )
+
+
+async def unsubscribe_from_broadcast(telegram_chat_id: int, broadcast_id: int) -> None:
+    """Unsubscribe a user from a broadcast."""
+    async with acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO broadcast_subscriptions (telegram_chat_id, broadcast_id, is_subscribed)
+            VALUES ($1, $2, FALSE)
+            ON CONFLICT (telegram_chat_id, broadcast_id)
+            DO UPDATE SET is_subscribed = FALSE;
+            """,
+            telegram_chat_id, broadcast_id,
+        )
+
+
+async def get_subscribed_chat_ids(broadcast_id: int) -> list[int]:
+    """Get chat IDs of users who are subscribed to a broadcast and are in its target list."""
+    async with acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT DISTINCT p.telegram_chat_id
+            FROM participants p
+            INNER JOIN broadcast_targets bt ON p.alias = bt.participant_alias
+            INNER JOIN broadcast_subscriptions s ON s.telegram_chat_id = p.telegram_chat_id
+            WHERE bt.broadcast_id = $1 AND s.broadcast_id = $1 AND s.is_subscribed = TRUE
+            """,
+            broadcast_id,
+        )
+    return [r["telegram_chat_id"] for r in rows]
+
+
 # --- Delivery log ---
 
 async def log_delivery(
@@ -684,6 +765,23 @@ async def ensure_schema() -> None:
         """)
         await conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_participants_owner ON participants(owner_id);
+        """)
+
+        # --- broadcast_subscriptions ---
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS broadcast_subscriptions (
+                telegram_chat_id BIGINT NOT NULL,
+                broadcast_id INT NOT NULL REFERENCES broadcasts(id) ON DELETE CASCADE,
+                is_subscribed BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT NOW(),
+                PRIMARY KEY (telegram_chat_id, broadcast_id)
+            );
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_broadcast_subs_chat ON broadcast_subscriptions(telegram_chat_id);
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_broadcast_subs_broadcast ON broadcast_subscriptions(broadcast_id);
         """)
 
         # --- View ---

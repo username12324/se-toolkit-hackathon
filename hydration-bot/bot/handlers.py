@@ -178,45 +178,73 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # /events  (new — participant-facing broadcast info)
 # ---------------------------------------------------------------------------
 async def events_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Show the user which broadcasts they are subscribed to."""
+    """Show the user which broadcasts they are subscribed to, with subscribe/unsubscribe buttons."""
     user = update.effective_user
     assert user is not None
 
     chat_id = user.id
 
-    # Find aliases that match this chat_id
-    all_participants = await db.list_participants()
-    user_aliases = [p["alias"] for p in all_participants if p["telegram_chat_id"] == chat_id]
+    broadcasts = await db.get_broadcasts_for_user(chat_id)
 
-    if not user_aliases:
+    if not broadcasts:
         await update.message.reply_text(
-            "📢 You are not currently subscribed to any event broadcasts.\n\n"
+            "📢 You are not currently registered for any event broadcasts.\n\n"
             "An event organiser needs to register you with an alias first.\n"
             "Meanwhile, you can still use /start for personal hydration reminders!"
         )
         return
 
-    # Find active broadcasts that target this user
-    broadcasts = await db.list_broadcasts()
-    subs = []
+    text = "📢 <b>Your Event Broadcasts</b>\n\n"
+    text += "Use the buttons below to pause or resume each broadcast.\n\n"
+    await update.message.reply_text(
+        text,
+        parse_mode="HTML",
+        reply_markup=_broadcasts_keyboard(broadcasts),
+    )
+
+
+def _broadcasts_keyboard(broadcasts: list[dict]) -> InlineKeyboardMarkup:
+    """Build inline keyboard with subscribe/unsubscribe buttons per broadcast."""
+    keyboard = []
     for bc in broadcasts:
-        if any(a in bc["targets"] for a in user_aliases):
-            status_word = "✅ Active" if bc["is_active"] else "⏸️ Paused"
-            subs.append(
-                f"• <b>Broadcast #{bc['id']}</b> — {status_word}\n"
-                f"  Every {bc['interval_minutes']} min, {bc['start_time']}–{bc['end_time']}"
-            )
+        status = "✅ Subscribed" if bc["is_subscribed"] else "🔇 Unsubscribed"
+        status_word = "active" if bc["is_active"] else "paused"
+        label = f"{'🔇' if bc['is_subscribed'] else '✅'} Broadcast #{bc['id']} ({bc['interval_minutes']}min, {status_word})"
+        toggle_data = f"unsub_{bc['id']}" if bc["is_subscribed"] else f"sub_{bc['id']}"
+        keyboard.append([InlineKeyboardButton(label, callback_data=toggle_data)])
+    keyboard.append([InlineKeyboardButton("🔙 Close", callback_data="close_broadcasts")])
+    return InlineKeyboardMarkup(keyboard)
 
-    if not subs:
-        await update.message.reply_text(
-            f"📢 Your alias(es): <b>{', '.join(user_aliases)}</b>\n\n"
-            "No active broadcasts target you right now.",
-            parse_mode="HTML",
-        )
-        return
 
-    text = "📢 <b>Your Event Broadcasts</b>\n\n" + "\n\n".join(subs)
-    await update.message.reply_text(text, parse_mode="HTML")
+async def _handle_sub_callback(query, user_id: int, broadcast_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """User pressed subscribe button for a broadcast."""
+    await db.subscribe_to_broadcast(user_id, broadcast_id)
+    broadcasts = await db.get_broadcasts_for_user(user_id)
+    await _safe_edit(
+        "📢 <b>Your Event Broadcasts</b>\n\n"
+        "Use the buttons below to pause or resume each broadcast.\n\n",
+        query,
+        reply_markup=_broadcasts_keyboard(broadcasts),
+    )
+    logger.info("User %d subscribed to broadcast %d.", user_id, broadcast_id)
+
+
+async def _handle_unsub_callback(query, user_id: int, broadcast_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """User pressed unsubscribe button for a broadcast."""
+    await db.unsubscribe_from_broadcast(user_id, broadcast_id)
+    broadcasts = await db.get_broadcasts_for_user(user_id)
+    await _safe_edit(
+        "📢 <b>Your Event Broadcasts</b>\n\n"
+        "Use the buttons below to pause or resume each broadcast.\n\n",
+        query,
+        reply_markup=_broadcasts_keyboard(broadcasts),
+    )
+    logger.info("User %d unsubscribed from broadcast %d.", user_id, broadcast_id)
+
+
+async def _handle_close_broadcasts_callback(query, user_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """User pressed close button on broadcasts keyboard."""
+    await query.message.delete()
 
 
 # ---------------------------------------------------------------------------
@@ -237,6 +265,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await _handle_stop_callback(query, user_id, context)
     elif data.startswith("settime_"):
         await _handle_settime_callback(query, user_id, data.split("_")[1], context)
+    elif data.startswith("sub_"):
+        await _handle_sub_callback(query, user_id, int(data.split("_")[1]), context)
+    elif data.startswith("unsub_"):
+        await _handle_unsub_callback(query, user_id, int(data.split("_")[1]), context)
+    elif data == "close_broadcasts":
+        await _handle_close_broadcasts_callback(query, user_id, context)
     else:
         logger.warning("Unknown callback data: %s", data)
         await query.edit_message_text("⚠️ Unknown action.")

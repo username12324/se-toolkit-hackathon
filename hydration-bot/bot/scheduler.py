@@ -154,12 +154,11 @@ async def check_broadcasts(context: CallbackContext) -> None:
                 continue
         # If never sent (last_sent is None), send immediately
 
-        # Get target chat IDs
-        targets = bc["targets"]
-        participants = await db.get_participant_chat_ids(targets)
+        # Get subscribed chat IDs (only users who haven't unsubscribed)
+        chat_ids = await db.get_subscribed_chat_ids(bc["id"])
 
-        if not participants:
-            logger.warning("Broadcast %d has no valid targets.", bc["id"])
+        if not chat_ids:
+            logger.warning("Broadcast %d has no subscribed targets.", bc["id"])
             continue
 
         # Update last_sent_at BEFORE sending so the timestamp reflects the
@@ -167,19 +166,19 @@ async def check_broadcasts(context: CallbackContext) -> None:
         # causes every-other-minute delivery).
         await db.update_broadcast_last_sent(bc["id"])
 
-        # Send message to each target
-        for alias, chat_id in participants:
+        # Send message to each subscribed user
+        for chat_id in chat_ids:
             try:
                 await bot.send_message(
                     chat_id=chat_id,
                     text=bc["message"],
                     parse_mode="Markdown",
                 )
-                await db.log_delivery(bc["id"], alias, "sent")
-                logger.info("Broadcast %d sent to %s (chat_id: %d)", bc["id"], alias, chat_id)
+                await db.log_delivery(bc["id"], f"chat_{chat_id}", "sent")
+                logger.info("Broadcast %d sent to chat_id %d", bc["id"], chat_id)
             except Exception as exc:
-                logger.error("Failed to send broadcast %d to %s: %s", bc["id"], alias, exc)
-                await db.log_delivery(bc["id"], alias, "failed")
+                logger.error("Failed to send broadcast %d to chat_id %d: %s", bc["id"], chat_id, exc)
+                await db.log_delivery(bc["id"], f"chat_{chat_id}", "failed")
 
 
 def start_broadcast_checker(application: Application) -> None:
