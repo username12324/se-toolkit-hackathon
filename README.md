@@ -1,85 +1,26 @@
-# LMS Analytics & Hydration Bot
-
-A full-stack project with two independent systems sharing a PostgreSQL database:
-
-1. **LMS Analytics** – a learning management analytics platform for university instructors to monitor student progress across software engineering labs.
-2. **Hydration Bot** – a Telegram bot + web dashboard for event broadcasts and personal hydration reminders.
-
----
-
-## Part 1: LMS Analytics
-
-### Dashboard
-
-![Dashboard – Score Distribution and Pass Rates](docs/screenshots/dashboard-scores-passrates.png)
-
-![Dashboard – Submissions Timeline and Group Performance](docs/screenshots/dashboard-timeline-groups.png)
-
-### API (Swagger UI)
-
-![Swagger UI – Analytics endpoints](docs/screenshots/swagger-analytics.png)
-
-### Features
-
-| Area | Feature | Description |
-|---|---|---|
-| **Backend** | Items CRUD | Tree-structured course items (course → labs → tasks → steps) with JSONB attributes |
-| **Backend** | Learners | List (filterable by enrollment date) and create learners |
-| **Backend** | Interactions | Log and query student attempts with scores |
-| **Backend** | ETL Pipeline | Sync items and interaction logs from the autochecker API idempotently (`POST /pipeline/sync`) |
-| **Backend** | Analytics | Score histogram, pass rates, submission timeline, group performance, completion rate, top learners |
-| **Backend** | Auth | Bearer token (API key) authentication on all endpoints |
-| **Backend** | CORS | Configurable cross-origin middleware |
-| **Frontend** | API Key Login | Token persisted in `localStorage` |
-| **Frontend** | Items Table | Lists all labs/tasks with ID, type, title, created date |
-| **Frontend** | Dashboard | Lab selector + 4 chart cards (Submissions Timeline, Score Distribution, Group Performance, Task Pass Rates) and a pass rates table |
-| **Infrastructure** | Docker Compose | Backend, PostgreSQL, pgAdmin, and Caddy reverse proxy |
-| **Infrastructure** | Swagger UI | Interactive API docs at `/docs` |
-| **Infrastructure** | pgAdmin | Database admin UI at `/utils/pgadmin` |
-
-### Usage
-
-**View the Dashboard**
-
-1. Open `http://<VM_IP>:42002` in a browser.
-2. Enter your API key (the value of `LMS_API_KEY` from your `.env` file).
-3. Select a lab from the dropdown to view its analytics.
-
-**Query the API**
-
-Swagger UI is available at `http://<VM_IP>:42002/docs`. Use your API key as a Bearer token.
-
-```bash
-# Sync data from the autochecker
-curl -X POST http://<VM_IP>:42002/pipeline/sync \
-  -H "Authorization: Bearer <LMS_API_KEY>"
-
-# Get task pass rates
-curl http://<VM_IP>:42002/analytics/pass-rates \
-  -H "Authorization: Bearer <LMS_API_KEY>"
-```
-
----
-
-## Part 2: Hydration Bot (`hydration-bot/`)
+# 💧 Hydration & Event Broadcast Bot
 
 A Telegram bot with a **web-based organizer dashboard** for event broadcast reminders,
 plus **personal hydration reminders** for individual users.
 
-### Architecture
+Built with **python-telegram-bot v21**, **FastAPI**, **asyncpg**, **PostgreSQL**, and **Docker**.
 
-```
-┌──────────────────┐     ┌──────────────────┐     ┌──────────────┐
-│  Telegram Users  │     │  Event Organizers │     │  PostgreSQL  │
-│  (participants)  │◄───►│  (web dashboard)  │◄───►│  (shared DB) │
-│                  │     │   FastAPI + HTML  │     │              │
-└──────────────────┘     └──────────────────┘     └──────────────┘
-      python-telegram-bot        Jinja2              asyncpg
-```
+---
 
-### Features
+## Overview
 
-#### 💧 Personal Hydration Reminders
+This system serves **two types of users**:
+
+| Role | How they interact | What they do |
+|------|-------------------|--------------|
+| **Event Organizer** | Web dashboard (browser) | Create broadcast schedules, manage participants, view delivery logs |
+| **Event Participant** | Telegram bot | Receive broadcasts, manage personal hydration reminders |
+
+---
+
+## Features
+
+### 💧 Personal Hydration Reminders
 
 | Command / Action | Description |
 |---|---|
@@ -89,24 +30,26 @@ plus **personal hydration reminders** for individual users.
 | **▶️ Start / ⏹️ Stop** | Inline buttons to toggle reminders on/off |
 | **Quick-select** | 15 min · 30 min · 1 hr · 2 hrs buttons |
 
-All settings persist across bot restarts.
+All settings persist across bot restarts and are automatically restored.
 
-#### 📢 Event Broadcasts
+### 📢 Event Broadcasts
 
 | Feature | Description |
 |---|---|
-| **Organizer dashboard** | Create, edit, pause, delete broadcast schedules via web UI |
+| **Organizer dashboard** | Create, edit, pause, and delete broadcast schedules via web UI |
 | **Time windows** | Messages only sent within allowed hours (e.g. 09:00–19:00), including overnight |
 | **Targeted delivery** | Send to specific participant aliases registered by the organiser |
 | **Subscribe / Unsubscribe** | Participants toggle per-broadcast subscriptions via inline buttons (`/events`) |
 | **Delivery logging** | Every send attempt recorded with status (sent/failed) |
 | **Auto-resume** | Broadcasts resume correctly after bot restart |
 
-#### 🔐 Multi-tenant Web Dashboard
+### 🔐 Multi-tenant Web Dashboard
 
 Each organiser registers their own participants and broadcasts. Data is isolated by `owner_id` — organisers only see their own resources.
 
-### Project Structure
+---
+
+## Project Structure
 
 ```
 hydration-bot/
@@ -121,7 +64,7 @@ hydration-bot/
 │   ├── templates/       # Jinja2 HTML templates
 │   └── static/          # CSS styles
 ├── db/
-│   └── init.sql         # Full schema (users + participants + broadcasts + subscriptions + delivery_log)
+│   └── init.sql         # Full schema
 ├── Dockerfile           # Bot container
 ├── Dockerfile.web       # Web dashboard container
 ├── .env.example
@@ -130,7 +73,9 @@ hydration-bot/
 └── README.md
 ```
 
-### Database Schema
+---
+
+## Database Schema
 
 ```
 users                  – personal water reminder state (per Telegram user_id)
@@ -141,17 +86,26 @@ broadcast_subscriptions– per-user subscribe/unsubscribe toggle per broadcast
 delivery_log           – audit trail of every send attempt (sent/failed)
 ```
 
-### Quick Start
+---
 
-**1. Configure environment**
+## Quick Start
+
+### 1. Configure environment
 
 ```bash
 cd hydration-bot
 cp .env.example .env
-# Set TELEGRAM_BOT_TOKEN from @BotFather
 ```
 
-**2. Start the stack**
+Edit `.env` and set your **Telegram Bot Token** (obtain one from [@BotFather](https://t.me/BotFather)):
+
+```env
+TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+```
+
+You can leave the other defaults as-is.
+
+### 2. Start the stack
 
 ```bash
 docker compose up --build -d
@@ -165,30 +119,76 @@ This launches:
 | `bot`   | Telegram bot + broadcast scheduler | — |
 | `web`   | Organizer dashboard (FastAPI) | 8000 |
 
-**3. Use the bot**
+### 3. Verify
 
-Find your bot on Telegram and send `/start`.
+```bash
+docker compose logs -f bot
+```
 
-**4. Open the web dashboard**
+You should see:
 
-Navigate to `http://localhost:8000` in your browser.
+```
+Database pool initialised …
+Restored 0 water reminder(s).
+Broadcast checker scheduled (every 1 minute).
+Broadcast system ready (0 active broadcast(s)).
+Starting bot polling …
+```
 
-### Bot Commands
+### 4. Open Telegram
 
-| Command | Audience | Description |
-|---|---|---|
-| `/start` | Participants | Welcome + hydration reminder menu |
-| `/settime <min>` | Participants | Set personal reminder interval |
-| `/status` | Participants | Show hydration settings |
-| `/events` | Participants | View broadcasts + subscribe/unsubscribe toggle buttons |
+Find your bot and send `/start`.
 
-### Web Dashboard (Organisers)
+### 5. Open the Web Dashboard
 
-1. **Participants** — register participant aliases and their Telegram Chat IDs.
-2. **Broadcasts** — create schedules with message, interval, time window, and targets.
-3. **Logs** — view delivery history with timestamps and status.
+Navigate to **`http://localhost:8000`** in your browser.
 
-### Environment Variables
+---
+
+## Using the System
+
+### For Event Organizers (Web Dashboard)
+
+#### 1. Register
+
+Open the dashboard → click **Register** → create an account.
+
+#### 2. Add Participants
+
+1. Go to **Participants** in the navbar.
+2. Enter an **Alias** (e.g. `alice`, `team_lead_1`) and the participant's **Telegram Chat ID**.
+3. Click **Add**.
+
+> **How to find a participant's Chat ID:** Have them message
+> [@userinfobot](https://t.me/userinfobot) on Telegram — it will reply with their numeric ID.
+
+#### 3. Create a Broadcast
+
+1. Go to **Dashboard** → click **+ New Broadcast**.
+2. Fill in:
+   - **Message** – the text to send (supports Markdown).
+   - **Interval** – how often (minutes).
+   - **Start / End time** – daily window when messages are allowed.
+   - **Targets** – select specific participants.
+   - **Active** – checked to start immediately, unchecked to create as paused.
+3. Click **Create Broadcast**.
+
+#### 4. Monitor Delivery
+
+Go to **Logs** to see every send attempt with timestamp, target, and status.
+
+### For Event Participants (Telegram)
+
+| Command | Description |
+|---|---|
+| `/start` | Welcome message + hydration reminder menu |
+| `/settime <min>` | Set personal hydration reminder interval (15–240 min) |
+| `/status` | Show current hydration settings |
+| `/events` | View broadcasts + subscribe/unsubscribe toggle buttons |
+
+---
+
+## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -199,47 +199,109 @@ Navigate to `http://localhost:8000` in your browser.
 | `DB_HOST` | `localhost` | PostgreSQL host |
 | `DB_PORT` | `5432` | PostgreSQL port |
 | `WEB_PORT` | `8000` | Web dashboard port |
-| `DEFAULT_INTERVAL` | `60` | Default water reminder interval (min) |
+| `DEFAULT_INTERVAL` | `60` | Default water reminder interval (minutes) |
 | `MIN_INTERVAL` | `15` | Minimum allowed interval |
 | `MAX_INTERVAL` | `240` | Maximum allowed interval |
 
 ---
 
-## LMS Deployment
+## Docker Compose Management
+
+```bash
+# Start all services
+docker compose up --build -d
+
+# View bot logs
+docker compose logs -f bot
+
+# View web logs
+docker compose logs -f web
+
+# Stop (keeps DB data)
+docker compose down
+
+# Stop and delete DB data
+docker compose down -v
+
+# Rebuild only the bot
+docker compose up -d --build bot
+```
+
+---
+
+## Graceful Shutdown
+
+The bot handles `SIGTERM` and `SIGINT`:
+
+1. Cancels all scheduled JobQueue jobs (water reminders + broadcast checker).
+2. Shuts down the Telegram Application.
+3. Closes the asyncpg connection pool.
+
+Docker sends `SIGTERM` automatically during `docker compose down`.
+
+---
+
+## Local Development (no Docker)
 
 ### Prerequisites
 
-- Docker 24+
-- Docker Compose 2.20+
-- Ubuntu 24.04 LTS (or any Linux with Docker)
+- Python 3.11+
+- PostgreSQL 15+ (running locally or remotely)
 
-### Deploy
+### 1. Set up virtual environments
 
 ```bash
-git clone https://github.com/username12324/se-toolkit-hackathon.git
-cd se-toolkit-hackathon
+# Bot
+python3.11 -m venv .venv-bot
+source .venv-bot/bin/activate
+pip install -r requirements.txt
+deactivate
 
-cp .env.docker.example .env.docker.secret
-# Edit .env.docker.secret with your values
-
-docker compose --env-file .env.docker.secret up --build -d
+# Web
+python3.11 -m venv .venv-web
+source .venv-web/bin/activate
+pip install -r requirements-web.txt
+deactivate
 ```
 
-| Service | URL |
-|---|---|
-| Dashboard | `http://<VM_IP>:42002` |
-| Swagger API Docs | `http://<VM_IP>:42002/docs` |
-| pgAdmin | `http://<VM_IP>:<PGADMIN_HOST_PORT>/utils/pgadmin` |
+### 2. Configure `.env`
+
+```bash
+cp .env.example .env
+# Edit DB_HOST, DB_USER, DB_PASSWORD, DB_NAME as needed.
+```
+
+### 3. Create the database schema
+
+```bash
+psql -h localhost -U hydration_user -d hydration_bot -f db/init.sql
+```
+
+### 4. Run the bot
+
+```bash
+source .venv-bot/bin/activate
+python -m bot.main
+```
+
+### 5. Run the web dashboard (separate terminal)
+
+```bash
+source .venv-web/bin/activate
+export DB_DSN="postgresql://hydration_user:changeme@localhost:5432/hydration_bot"
+uvicorn web.app:app --reload --host 0.0.0.0 --port 8000
+```
 
 ---
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| **LMS Backend** | FastAPI (Python 3.11), asyncpg, PostgreSQL 18 |
-| **LMS Frontend** | React, Bootstrap, Chart.js |
-| **Bot** | python-telegram-bot v21, APScheduler |
-| **Bot Web Dashboard** | FastAPI, Jinja2, asyncpg |
-| **Containerisation** | Docker + Docker Compose |
-| **Reverse Proxy** | Caddy |
+| Component | Library |
+|-----------|---------|
+| Telegram Bot | [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) v21 |
+| Web Framework | [FastAPI](https://fastapi.tiangolo.com/) |
+| PostgreSQL Driver | [asyncpg](https://github.com/MagicStack/asyncpg) 0.29 |
+| Env vars | [python-dotenv](https://github.com/theskumar/python-dotenv) 1.0 |
+| Templates | [Jinja2](https://jinja.palletsprojects.com/) |
+| Containerisation | Docker + Docker Compose |
+| Base image | `python:3.11-slim-bookworm` |
