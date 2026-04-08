@@ -4,7 +4,8 @@ Placeholder files for README demo screenshots. Replace with actual screenshots b
 
 ## Required Screenshots
 
-1. **dashboard-scores-passrates.png** — Dashboard showing the Score Distribution bar chart and Task Pass Rates doughnut chart.
+1. <img width="1917" height="808" alt="image" src="https://github.com/user-attachments/assets/df77bc68-2ba5-46f2-967f-36a72bf19fdf" />
+ — Dashboard showing the Score Distribution bar chart and Task Pass Rates doughnut chart.
 2. **dashboard-timeline-groups.png** — Dashboard showing the Submissions Timeline line chart and Group Performance bar chart.
 3. **swagger-analytics.png** — Swagger UI (`/docs`) showing the analytics endpoints section.
 
