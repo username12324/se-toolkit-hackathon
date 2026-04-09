@@ -8,15 +8,15 @@ A Telegram bot with a web-based organizer dashboard for event broadcast reminder
 
 ### Organizer Web Dashboard
 
-![Organizer Dashboard – Participants and Broadcasts](docs/screenshots/dashboard-participants-broadcasts.png)
+![Organizer Dashboard – Participants and Broadcasts](https://github.com/user-attachments/assets/e8b63296-87d9-40da-b88c-d6e312ce9b7f)
 
-![Broadcast Form – Create and Target Participants](docs/screenshots/broadcast-form.png)
+![Broadcast Form – Create and Target Participants](https://github.com/user-attachments/assets/db428204-5680-4ecc-97ea-b6c4d9557fa0)
 
 ### Telegram Bot
 
-![Bot /start – Welcome Menu with Hydration Buttons](docs/screenshots/bot-start-menu.png)
+![Bot /start – Welcome Menu with Hydration Buttons](https://github.com/user-attachments/assets/6a8c40fc-ab7c-430b-a137-5e37cd9db708)
 
-![Bot /events – Broadcast Subscription Toggle Buttons](docs/screenshots/bot-events-subscribe.png)
+![Bot /events – Broadcast Subscription Toggle Buttons](https://github.com/user-attachments/assets/8aec363e-a0a2-4290-9454-d73526d97517)
 
 ---
 
